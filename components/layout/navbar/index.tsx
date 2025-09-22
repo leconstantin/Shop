@@ -4,8 +4,9 @@ import LogoSquare from "@/components/logo-square";
 import { getMenu } from "@/lib/shopify";
 import type { Menu } from "@/lib/shopify/types";
 import MobileMenu from "./mobile-menu";
-import Search from "./search";
+import Search, { SearchSkeleton } from "./search";
 
+const { SITE_NAME } = process.env;
 export async function Navbar() {
   const menu = await getMenu("nextjs-frontend-menu");
   //   console.log(menu);
@@ -26,7 +27,7 @@ export async function Navbar() {
           >
             <LogoSquare />
             <div className="ml-2 flex-none font-medium text-sm uppercase md:hidden lg:block">
-              {process.env.SITE_NAME}
+              {SITE_NAME}
             </div>
           </Link>
 
@@ -47,7 +48,9 @@ export async function Navbar() {
           ) : null}
         </div>
         <div className="hidden justify-center md:flex md:w-1/3">
-          <Search />
+          <Suspense fallback={<SearchSkeleton />}>
+            <Search />
+          </Suspense>
         </div>
         <div className="flex justify-end md:w-1/3">{/* <CartModal /> */}</div>
       </div>
