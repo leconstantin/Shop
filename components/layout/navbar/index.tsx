@@ -9,7 +9,7 @@ import Search, { SearchSkeleton } from "./search";
 const { SITE_NAME } = process.env;
 export async function Navbar() {
   const menu = await getMenu("nextjs-frontend-menu");
-  //   console.log(menu);
+  // console.log(menu);
 
   return (
     <nav className="sticky top-0 z-30 flex items-center justify-between p-4 backdrop-blur-sm lg:px-6">
