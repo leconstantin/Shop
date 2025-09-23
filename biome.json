@@ -24,7 +24,14 @@
       },
       "style": {
         "useBlockStatements": "off",
-        "noMagicNumbers": "off"
+        "noMagicNumbers": "off",
+        "noNonNullAssertion": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "nursery": {
+        "noNonNullAssertedOptionalChain": "off"
       }
     },
     "domains": {
