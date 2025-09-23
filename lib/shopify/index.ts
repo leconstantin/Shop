@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/style/useThrowOnlyError: <explanation> */
-import {
-  unstable_cacheLife as cacheLife,
-  unstable_cacheTag as cacheTag,
-} from "next/cache";
+// import {
+//   unstable_cacheLife as cacheLife,
+//   unstable_cacheTag as cacheTag,
+// } from "next/cache";
 import { cookies } from "next/headers";
 import {
   HIDDEN_PRODUCT_TAG,
@@ -11,6 +11,13 @@ import {
 } from "../constants";
 import { isShopifyError } from "../type-guards";
 import { ensureStartsWith } from "../utils";
+import {
+  addToCartMutation,
+  createCartMutation,
+  editCartItemsMutation,
+  removeFromCartMutation,
+} from "./mutations/cart";
+import { getCartQuery } from "./queries/cart";
 import {
   getCollectionProductsQuery,
   getCollectionQuery,
@@ -45,13 +52,6 @@ import type {
   ShopifyRemoveFromCartOperation,
   ShopifyUpdateCartOperation,
 } from "./types";
-import {
-  addToCartMutation,
-  createCartMutation,
-  editCartItemsMutation,
-  removeFromCartMutation,
-} from "./mutations/cart";
-import { getCartQuery } from "./queries/cart";
 
 const domain = process.env.SHOPIFY_STORE_DOMAIN
   ? ensureStartsWith(process.env.SHOPIFY_STORE_DOMAIN, "https://")
@@ -200,12 +200,13 @@ export async function getProducts({
   reverse?: boolean;
   sortKey?: string;
 }): Promise<Product[]> {
-  "use cache";
-  cacheTag(TAGS.products);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.products);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyProductsOperation>({
     query: getProductsQuery,
+    tags: [TAGS.products],
     variables: {
       query,
       reverse,
@@ -244,12 +245,13 @@ const reshapeCollections = (collections: ShopifyCollection[]) => {
 };
 
 export async function getCollections(): Promise<Collection[]> {
-  "use cache";
-  cacheTag(TAGS.collections);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.collections);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyCollectionsOperation>({
     query: getCollectionsQuery,
+    tags: [TAGS.collections],
   });
   const shopifyCollections = removeEdgesAndNodes(res.body?.data?.collections);
   const collections = [
@@ -277,12 +279,13 @@ export async function getCollections(): Promise<Collection[]> {
 export async function getCollection(
   handle: string
 ): Promise<Collection | undefined> {
-  "use cache";
-  cacheTag(TAGS.collections);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.collections);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyCollectionOperation>({
     query: getCollectionQuery,
+    tags: [TAGS.collections],
     variables: {
       handle,
     },
@@ -300,12 +303,13 @@ export async function getCollectionProducts({
   reverse?: boolean;
   sortKey?: string;
 }): Promise<Product[]> {
-  "use cache";
-  cacheTag(TAGS.collections, TAGS.products);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.collections, TAGS.products);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyCollectionProductsOperation>({
     query: getCollectionProductsQuery,
+    tags: [TAGS.collections, TAGS.products],
     variables: {
       handle: collection,
       reverse,
@@ -324,12 +328,13 @@ export async function getCollectionProducts({
 }
 
 export async function getProduct(handle: string): Promise<Product | undefined> {
-  "use cache";
-  cacheTag(TAGS.products);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.products);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyProductOperation>({
     query: getProductQuery,
+    tags: [TAGS.products],
     variables: {
       handle,
     },
@@ -341,12 +346,13 @@ export async function getProduct(handle: string): Promise<Product | undefined> {
 export async function getProductRecommendations(
   productId: string
 ): Promise<Product[]> {
-  "use cache";
-  cacheTag(TAGS.products);
-  cacheLife("days");
+  // "use cache";
+  // cacheTag(TAGS.products);
+  // cacheLife("days");
 
   const res = await shopifyFetch<ShopifyProductRecommendationsOperation>({
     query: getProductRecommendationsQuery,
+    tags: [TAGS.products],
     variables: {
       productId,
     },
@@ -355,11 +361,11 @@ export async function getProductRecommendations(
   return reshapeProducts(res.body.data.productRecommendations);
 }
 
-const reshapeCart = (cart: ShopifyCart): Cart => {
+function reshapeCart(cart: ShopifyCart): Cart {
   if (!cart.cost?.totalTaxAmount) {
     cart.cost.totalTaxAmount = {
       amount: "0.0",
-      currencyCode: cart.cost.totalAmount.currencyCode,
+      currencyCode: "USD",
     };
   }
 
@@ -367,11 +373,12 @@ const reshapeCart = (cart: ShopifyCart): Cart => {
     ...cart,
     lines: removeEdgesAndNodes(cart.lines),
   };
-};
+}
 
 export async function createCart(): Promise<Cart> {
   const res = await shopifyFetch<ShopifyCreateCartOperation>({
     query: createCartMutation,
+    cache: "no-store",
   });
 
   return reshapeCart(res.body.data.cartCreate.cart);
@@ -399,6 +406,7 @@ export async function removeFromCart(lineIds: string[]): Promise<Cart> {
       cartId,
       lineIds,
     },
+    cache: "no-store",
   });
 
   return reshapeCart(res.body.data.cartLinesRemove.cart);
@@ -414,6 +422,7 @@ export async function updateCart(
       cartId,
       lines,
     },
+    cache: "no-store",
   });
 
   return reshapeCart(res.body.data.cartLinesUpdate.cart);
@@ -429,6 +438,7 @@ export async function getCart(): Promise<Cart | undefined> {
   const res = await shopifyFetch<ShopifyCartOperation>({
     query: getCartQuery,
     variables: { cartId },
+    tags: [TAGS.cart],
   });
 
   // Old carts becomes `null` when you checkout.
