@@ -81,13 +81,17 @@ export function AddToCart({ product }: { product: Product }) {
   const actionWithVariant = formAction.bind(null, selectedVariantId);
   const finalVariant = variants.find((v) => v.id === selectedVariantId)!;
 
+  const handleSubmit = async () => {
+    // First, update the optimistic cart
+    if (finalVariant) {
+      addCartItem(finalVariant, product);
+    }
+    // Then execute the server action
+    await actionWithVariant();
+  };
+
   return (
-    <form
-      action={async () => {
-        addCartItem(finalVariant, product);
-        await actionWithVariant();
-      }}
-    >
+    <form action={handleSubmit}>
       <SubmitButton
         availableForSale={availableForSale}
         selectedVariantId={selectedVariantId}

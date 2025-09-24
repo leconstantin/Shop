@@ -394,7 +394,15 @@ export async function createCart(): Promise<Cart> {
 export async function addToCart(
   lines: { merchandiseId: string; quantity: number }[]
 ): Promise<Cart> {
-  const cartId = (await cookies()).get("cartId")?.value!;
+  let cartId = (await cookies()).get("cartId")?.value;
+  
+  // If no cart exists, create one first
+  if (!cartId) {
+    const newCart = await createCart();
+    cartId = newCart.id!;
+    (await cookies()).set("cartId", cartId);
+  }
+  
   const res = await shopifyFetch<ShopifyAddToCartOperation>({
     query: addToCartMutation,
     variables: {
@@ -406,7 +414,12 @@ export async function addToCart(
 }
 
 export async function removeFromCart(lineIds: string[]): Promise<Cart> {
-  const cartId = (await cookies()).get("cartId")?.value!;
+  const cartId = (await cookies()).get("cartId")?.value;
+  
+  if (!cartId) {
+    throw new Error("No cart found to remove items from");
+  }
+  
   const res = await shopifyFetch<ShopifyRemoveFromCartOperation>({
     query: removeFromCartMutation,
     variables: {
@@ -422,7 +435,12 @@ export async function removeFromCart(lineIds: string[]): Promise<Cart> {
 export async function updateCart(
   lines: { id: string; merchandiseId: string; quantity: number }[]
 ): Promise<Cart> {
-  const cartId = (await cookies()).get("cartId")?.value!;
+  const cartId = (await cookies()).get("cartId")?.value;
+  
+  if (!cartId) {
+    throw new Error("No cart found to update");
+  }
+  
   const res = await shopifyFetch<ShopifyUpdateCartOperation>({
     query: editCartItemsMutation,
     variables: {

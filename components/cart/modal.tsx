@@ -16,7 +16,7 @@ import { DEFAULT_OPTION } from "@/lib/constants";
 import { createUrl } from "@/lib/utils";
 import LoadingDots from "../loading-dots";
 import Price from "../price";
-import { createCartAndSetCookie, redirectToCheckout } from "./actions";
+import { handleCheckout } from "./actions";
 import { useCart } from "./cart-context";
 import { DeleteItemButton } from "./delete-item-button";
 import { EditItemQuantityButton } from "./edit-item-quantity-button";
@@ -35,7 +35,7 @@ export default function CartModal() {
 
   useEffect(() => {
     if (!cart) {
-      createCartAndSetCookie();
+      // Cart will be created automatically when needed
     }
   }, [cart]);
 
@@ -50,7 +50,7 @@ export default function CartModal() {
       }
       quantityRef.current = cart?.totalQuantity;
     }
-  }, [isOpen, cart?.totalQuantity, quantityRef]);
+  }, [cart?.totalQuantity, isOpen]);
 
   return (
     <>
@@ -222,7 +222,7 @@ export default function CartModal() {
                       />
                     </div>
                   </div>
-                  <form action={redirectToCheckout}>
+                  <form action={handleCheckout}>
                     <CheckoutButton />
                   </form>
                 </div>

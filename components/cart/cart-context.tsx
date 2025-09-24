@@ -1,7 +1,14 @@
 "use client";
 
 import type React from "react";
-import { createContext, use, useContext, useMemo, useOptimistic } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useContext,
+  useMemo,
+  useOptimistic,
+} from "react";
 import type {
   Cart,
   CartItem,
@@ -162,17 +169,39 @@ function cartReducer(state: Cart | undefined, action: CartAction): Cart {
       const existingItem = currentCart.lines.find(
         (item) => item.merchandise.id === variant.id
       );
-      const updatedItem = createOrUpdateCartItem(
-        existingItem,
-        variant,
-        product
-      );
 
-      const updatedLines = existingItem
-        ? currentCart.lines.map((item) =>
-            item.merchandise.id === variant.id ? updatedItem : item
-          )
-        : [...currentCart.lines, updatedItem];
+      // If item exists, increment quantity
+      if (existingItem) {
+        const updatedItem = {
+          ...existingItem,
+          quantity: existingItem.quantity + 1,
+          cost: {
+            ...existingItem.cost,
+            totalAmount: {
+              ...existingItem.cost.totalAmount,
+              amount: (
+                Number(existingItem.cost.totalAmount.amount) +
+                Number(variant.price.amount)
+              ).toString(),
+            },
+          },
+        };
+
+        const updatedLines = currentCart.lines.map((item) =>
+          item.merchandise.id === variant.id ? updatedItem : item
+        );
+
+        return {
+          ...currentCart,
+          ...updateCartTotals(updatedLines),
+          lines: updatedLines,
+        };
+      }
+
+      // Add new item
+      const updatedItem = createOrUpdateCartItem(undefined, variant, product);
+
+      const updatedLines = [...currentCart.lines, updatedItem];
 
       return {
         ...currentCart,
@@ -211,23 +240,29 @@ export function useCart() {
     cartReducer
   );
 
-  const updateCartItem = (merchandiseId: string, updateType: UpdateType) => {
-    updateOptimisticCart({
-      type: "UPDATE_ITEM",
-      payload: { merchandiseId, updateType },
-    });
-  };
+  const updateCartItemCallback = useCallback(
+    (merchandiseId: string, updateType: UpdateType) => {
+      updateOptimisticCart({
+        type: "UPDATE_ITEM",
+        payload: { merchandiseId, updateType },
+      });
+    },
+    [updateOptimisticCart]
+  );
 
-  const addCartItem = (variant: ProductVariant, product: Product) => {
-    updateOptimisticCart({ type: "ADD_ITEM", payload: { variant, product } });
-  };
+  const addCartItem = useCallback(
+    (variant: ProductVariant, product: Product) => {
+      updateOptimisticCart({ type: "ADD_ITEM", payload: { variant, product } });
+    },
+    [updateOptimisticCart]
+  );
 
   return useMemo(
     () => ({
       cart: optimisticCart,
-      updateCartItem,
+      updateCartItem: updateCartItemCallback,
       addCartItem,
     }),
-    [optimisticCart]
+    [optimisticCart, updateCartItemCallback, addCartItem]
   );
 }
